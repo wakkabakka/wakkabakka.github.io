@@ -29,6 +29,7 @@
 
     <script>
         const socket = new WebSocket('wss://diep.wakka.blog:443');
+        const clientId = crypto.randomUUID();
 
         function sendUpdate(clientId, lobbyId, position, name, color = "red") {
             socket.send(JSON.stringify({
@@ -43,7 +44,7 @@
         socket.onopen = () => {
             console.log("Connected");
             setInterval(() => {
-                sendUpdate(-1, 'browser', { x: 0, y: 0 }, 0, "red");
+                sendUpdate(clientId, 'browser', { x: 0, y: 0 }, 0, "red");
             }, 250);
         };
 
