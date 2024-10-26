@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby Display</title>
+    <style>
+        .lobby-container {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
+
+        .lobby {
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="output"></div>
+
+    <script>
+        const socket = new WebSocket('wss://diep.wakka.blog:443');
+
+        function sendUpdate(clientId, lobbyId, position, name, color = "red") {
+            socket.send(JSON.stringify({
+                clientId,
+                lobbyId: lobbyId,
+                position,
+                name,
+                color
+            }));
+        }
+
+        socket.onopen = () => {
+            console.log("Connected");
+            setInterval(() => {
+                sendUpdate(-1, 'browser', { x: 0, y: 0 }, 0, "red");
+            }, 250);
+        };
+
+        socket.onmessage = event => {
+            const data = JSON.parse(event.data);
+            const groupedByLobby = {};
+
+            for (const key in data) {
+                const client = data[key];
+                const lobbyId = client.lobbyId;
+
+                if (!groupedByLobby[lobbyId]) {
+                    groupedByLobby[lobbyId] = [];
+                }
+                groupedByLobby[lobbyId].push(client);
+            }
+
+            // Generate HTML
+            let html = '<div class="lobby-container">';
+
+            for (const lobbyId in groupedByLobby) {
+                // Create a clickable lobby ID
+                html += `<div class="lobby" id="lobby-${lobbyId}">
+                            <h2>
+                                <a href="https://diep.io/?p=${lobbyId}" target="_blank">Lobby ID: ${lobbyId}</a>
+                            </h2>
+                            <ul>`;
+
+                groupedByLobby[lobbyId].forEach(client => {
+                    const name = client.name || 'unnamed'; // Fallback for empty names
+                    html += `<li style="color: ${client.color};">${name}</li>`;
+                });
+
+                html += '</ul></div>';
+            }
+
+            html += '</div>';
+
+            // Update the output div
+            document.getElementById('output').innerHTML = html;
+        };
+
+        socket.onclose = () => {
+            alert('Disconnected. pls reload the page or ');
+        };
+    </script>
+</body>
+
+</html>
