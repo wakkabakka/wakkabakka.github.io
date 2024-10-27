@@ -34,15 +34,13 @@ fetch('https://api.ipify.org?format=json')
     url = (data.ip === "126.163.132.193")
         ? "wss://192.168.1.100"
     : "wss://diep.wakka.blog";
-    const wait = setInterval(() => {
-            main();
-    });
+            main(url);
 })
 
 
 
-function main(){
-        const socket = new WebSocket('wss://diep.wakka.blog:443');
+function main(url){
+        const socket = new WebSocket(url);
         const clientId = crypto.randomUUID();
 
         function sendUpdate(clientId, lobbyId, position, name, color = "red") {
