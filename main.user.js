@@ -1,13 +1,15 @@
 // ==UserScript==
 // @name         Share Position + AFK
 // @namespace    http://tampermonkey.net/
-// @version      2024-10-30
+// @version      2024-10-30-1
 // @description  Shift + I to share position, 'J' to afk.
 // @author       baka multi
 // @match        https://diep.io/*
 // @icon         data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==
 // @grant        none
 // @run-at       document-start
+// @downloadURL  https://github.com/wakkabakka/wakkabakka.github.io/raw/refs/heads/main/main.user.js
+// @updateURL    https://github.com/wakkabakka/wakkabakka.github.io/raw/refs/heads/main/main.user.js
 // ==/UserScript==
 
 
@@ -279,7 +281,8 @@ function main() {
 
 
 
-        if (!isactive) return;
+        if (!isactive) {canvas.style.display = "none"; return;}
+        canvas.style.display = "block";
         for (const clientId in allClientsData) {
             const client = allClientsData[clientId];
             if (client.clientId === MyClientId || client.lobbyId !== lobbyId || (client.hidden && url == "wss://diep.wakka.blog")) continue;
