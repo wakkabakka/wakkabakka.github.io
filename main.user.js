@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Share Position + AFK
 // @namespace    http://tampermonkey.net/
-// @version      2024-10-30-2
+// @version      2024-11-3
 // @description  Shift + I to share position, 'J' to afk.
 // @author       baka multi
 // @match        https://diep.io/*
@@ -283,20 +283,27 @@ function main() {
 
         if (!isactive) {canvas.style.display = "none"; return;}
         canvas.style.display = "block";
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        //ctx.clearRect(0, 0, canvas.width, canvas.height);
+        if (!manual) {
+            canvas.style.left = `${screen_data.minimap_x}px`;
+            canvas.style.top = `${screen_data.minimap_y}px`;
+            canvas.width = screen_data.minimap_width;
+            canvas.height = screen_data.minimap_height;
+        }
+        else {
+            canvas.style.left = `${mx}px`
+                canvas.style.top = `${my}px`
+                canvas.width = canvas.height = mw;
+        }
         for (const clientId in allClientsData) {
             const client = allClientsData[clientId];
+            //console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`) //for debug
             if (client.lobbyId == 'dead' || client.clientId === MyClientId || client.lobbyId !== lobbyId || (client.hidden && url == "wss://diep.wakka.blog")) continue;
 
-
-
             if (!manual) {
+                console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`)
                 const x = (canvas.width / Constants.ARENA_WIDTH) * client.position.x;
                 const y = (canvas.width / Constants.ARENA_WIDTH) * client.position.y;
-                canvas.style.left = `${screen_data.minimap_x}px`;
-                canvas.style.top = `${screen_data.minimap_y}px`;
-                canvas.width = screen_data.minimap_width;
-                canvas.height = screen_data.minimap_height;
                 ctx.fillStyle = client.color;
                 ctx.beginPath();
                 ctx.arc(x, y, screen_data.minimap_width / 50, 0, Math.PI * 2);
@@ -312,9 +319,7 @@ function main() {
                 ctx.strokeText(truncatedName, x - ctx.measureText(truncatedName).width / 2, y - screen_data.minimap_width / 25);
             }
             else {
-                canvas.style.left = `${mx}px`
-                canvas.style.top = `${my}px`
-                canvas.width = canvas.height = mw;
+
                 const x = (canvas.width / Constants.ARENA_WIDTH) * client.position.x;
                 const y = (canvas.width / Constants.ARENA_WIDTH) * client.position.y;
                 ctx.fillStyle = client.color;
