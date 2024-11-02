@@ -88,7 +88,7 @@ function main(url){
                 groupedByLobby[lobbyId].forEach(client => {
                     const name = client.name || 'unnamed'; // Fallback for empty names
                     if (!(url == "wss://diep.wakka.blog" && client.hidden)) {
-                    html += `<li style="color: ${client.color};">${name} ${client.TankName} ${client.level} ${client.TankName}</li>`;
+                    html += `<li style="color: ${client.color};">${name} | ${client.TankName} | ${client.level} | ${client.TankName}</li>`;
                     }
 
                 });
