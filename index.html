@@ -1,91 +1,112 @@
-# -*- coding: utf-8 -*-
+<!DOCTYPE html>
+<html lang="en">
 
-import asyncio
-import websockets
-import json
-import ssl
-import datetime
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby Display</title>
+    <style>
+        .lobby-container {
+            margin: 20px;
+            font-family: Arial, sans-serif;
+        }
 
-clients = {}  # クライアントの情報を保持
-connected_clients = set()  # 接続されているクライアントの集合を保持
-logged_clients = set()  # ログに記録されたクライアントIDを保持
+        .lobby {
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+        }
 
-async def handle_client(websocket, path):
-    client_id = None  # 接続時のクライアントIDを初期化
-    connected_clients.add(websocket)  # 新しいクライアントを集合に追加
+        h2 {
+            margin: 0 0 10px 0;
+        }
+    </style>
+</head>
 
-    try:
-        while True:
-            # クライアントからのメッセージを受信
-            message = await websocket.recv()
-            received_data = json.loads(message)
+<body>
+    <div id="output"></div>
 
-            if received_data.get('clientId', False):
-                # 受信したクライアントのデータを更新
-                client_id = received_data['clientId']
-                name = received_data['name']
-                lobby_id = received_data['lobbyId']
-                position = received_data['position']
-                color = received_data.get('color', 'red')
-                hidden = received_data.get('hidden', False)
-                score = received_data.get('score', False)
-                TankName = received_data.get('TankName', False)
-                level = received_data.get('level', False)
-                # クライアントのデータを保存または更新
-                clients[client_id] = {
-                    'clientId': client_id,  # プレイヤー名はクライアントIDに基づく仮名
-                    'name': name,
-                    'lobbyId': lobby_id,
-                    'position': position,
-                    'color': color,
-                    'hidden': hidden,
-                    'score': score,
-                    'TankName': TankName,
-                    'level': level
+    <script>
+fetch('https://api.ipify.org?format=json')
+    .then(response => response.json())
+    .then(data => {
+    url = (data.ip === "126.163.132.193")
+        ? "wss://192.168.1.100"
+    : "wss://diep.wakka.blog";
+            main(url);
+})
+
+
+
+function main(url){
+        const socket = new WebSocket(url);
+        const clientId = crypto.randomUUID();
+
+        function sendUpdate(clientId, lobbyId, position, name, color = "red") {
+            socket.send(JSON.stringify({
+                clientId,
+                lobbyId: lobbyId,
+                position,
+                name,
+                color
+            }));
+        }
+
+        socket.onopen = () => {
+            console.log("Connected");
+            setInterval(() => {
+                sendUpdate(clientId, 'browser', { x: 0, y: 0 }, 0, "red");
+            }, 250);
+        };
+
+        socket.onmessage = event => {
+            const data = JSON.parse(event.data);
+            const groupedByLobby = {};
+
+            for (const key in data) {
+                const client = data[key];
+                const lobbyId = client.lobbyId;
+
+                if (!groupedByLobby[lobbyId]) {
+                    groupedByLobby[lobbyId] = [];
                 }
+                groupedByLobby[lobbyId].push(client);
+            }
 
-                # IPアドレスを取得
-                client_ip = websocket.remote_address[0]
+            // Generate HTML
+            let html = '<div class="lobby-container">';
 
-                # クライアントが初回接続の場合のみログに保存
-                if client_id not in logged_clients:
-                    with open("log.txt", "a") as log_file:
-                        log_entry = f"{datetime.datetime.now()} - ClientID: {client_id}, Name: {name}, IP: {client_ip}\n"
-                        log_file.write(log_entry)
-                    logged_clients.add(client_id)
-                    print(f"クライアント {client_id} のデータをログに記録しました: IP {client_ip}")
+            for (const lobbyId in groupedByLobby) {
+                // Create a clickable lobby ID
+                html += `<div class="lobby" id="lobby-${lobbyId}">
+                            <h2>
+                                <a href="https://diep.io/?p=${lobbyId}" target="_blank">Lobby ID: ${lobbyId}</a>
+                            </h2>
+                            <ul>`;
 
-                print(f"クライアント {client_id} のデータを更新しました")
+                groupedByLobby[lobbyId].forEach(client => {
+                    const name = client.name || 'unnamed'; // Fallback for empty names
+                    if not (url == "wss://diep.wakka.blog" && client.hidden) {
+                    html += `<li style="color: ${client.color};">${name} ${client.TankName} ${client.level} ${client.TankName}</li>`;
+                    }
 
-                # 全クライアントのデータを送信
-                await websocket.send(json.dumps(clients))
-            else:
-                # メッセージを全クライアントに送信
-                broadcast_message = json.dumps({
-                    'name': received_data['name'],
-                    'text': received_data['text']
-                })
+                });
 
-                # すべての接続されたクライアントにメッセージを送信
-                for client in connected_clients:
-                    await client.send(broadcast_message)
+                html += '</ul></div>';
+            }
 
-    except websockets.exceptions.ConnectionClosed:
-        # クライアントが切断された際の処理
-        if client_id is not None:
-            # 切断されたクライアントのデータを削除
-            del clients[client_id]
-            connected_clients.remove(websocket)  # クライアントを接続リストから削除
-            print(f"クライアント {client_id} の接続が切断され、データを削除しました")
+            html += '</div>';
 
-# SSL設定
-ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-ssl_context.load_cert_chain(certfile='/etc/letsencrypt/live/diep.wakka.blog/fullchain.pem', keyfile='/etc/letsencrypt/live/diep.wakka.blog/privkey.pem')
+            // Update the output div
+            document.getElementById('output').innerHTML = html;
+        };
 
-# WebSocketサーバーを起動
-start_server = websockets.serve(handle_client, "0.0.0.0", 443, ssl=ssl_context)
+        socket.onclose = () => {
+            alert('Disconnected. pls reload the page');
+        };
+}
+    </script>
+</body>
 
-asyncio.get_event_loop().run_until_complete(start_server)
-print("WebSocketサーバーが起動しました")
-asyncio.get_event_loop().run_forever()
-
+</html>
