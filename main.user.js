@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Share Position + AFK
 // @namespace    http://tampermonkey.net/
-// @version      2024-11-3
+// @version      2024-10-30-1
 // @description  Shift + I to share position, 'J' to afk.
 // @author       baka multi
 // @match        https://diep.io/*
@@ -151,9 +151,10 @@ function getPolygonCenter(data) {
 }
 
 const crc = CanvasRenderingContext2D.prototype;
-const { beginPath: _beginPath, moveTo: _moveTo, lineTo: _lineTo, fill: _fill, strokeRect: _strokeRect } = crc;
+const { beginPath: _beginPath, moveTo: _moveTo, lineTo: _lineTo, fill: _fill, strokeRect: _strokeRect , fillText: _fillText} = crc;
 let vertices = [];
 let vertices_amount = -1;
+let _, level, TankName, score;
 
 crc.beginPath = function (...args) {
     vertices_amount = 0;
@@ -194,6 +195,23 @@ crc.strokeRect = function (...args) {
     screen_data.minimap_width = transform.a;
     screen_data.minimap_height = transform.d;
     _strokeRect.apply(this, args);
+};
+
+crc.fillText = function (...args) {
+    if (args[0].startsWith("Score: ")) {
+        const temp = parseFloat(args[0].substring(7).replace(/,/g, ''));
+        if (temp >= 1000) {
+            score = (temp / 1000).toFixed(1) + 'k';
+        } else {
+            score = temp.toString();
+        }
+    }
+    else if (args[0].startsWith("Lvl ") && args[0].split(" ").length > 2) {
+        const temp = args[0].split(" ");
+        level = args[0].split(" ")[1];
+        TankName = args[0].split(" ").slice(2).join(" ")
+    }
+    _fillText.apply(this, args);
 };
 
 Object.freeze(crc);
@@ -262,14 +280,17 @@ function main() {
         return { x: position_x, y: position_y };
     }
 
-    function sendUpdate(clientId, lobbyId, position, name, color = "red", hidden) {
+    function sendUpdate(clientId, lobbyId, position, name, color = "red", hidden, score, TankName, level) {
         socket.send(JSON.stringify({
             clientId,
             lobbyId: window.__common__.screen_state === 'in-game' ? lobbyId : 'dead',
             position,
             name,
             color,
-            hidden
+            hidden,
+            score,
+            TankName,
+            level
         }));
     }
 
