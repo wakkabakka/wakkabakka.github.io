@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Share Position + AFK
 // @namespace    http://tampermonkey.net/
-// @version      2024-11-3-2
+// @version      2024-11-3-3
 // @description  Shift + I to share position, 'J' to afk.
 // @author       baka multi
 // @match        https://diep.io/*
@@ -34,8 +34,8 @@ function afk() {
     function frame() {
         requestAnimationFrame(frame);
         if (!afk_enabled) return
-        console.log(position_x, position_y)
-        console.log(afk_x, afk_y)
+        //console.log(position_x, position_y)
+        //console.log(afk_x, afk_y)
         deltaX = Math.abs(position_x - afk_x);
         deltaY = Math.abs(position_y - afk_y);
         if (deltaX > allow_distance || deltaY > allow_distance) {
@@ -213,7 +213,7 @@ crc.fillText = function (...args) {
         level = args[0].split(" ")[1];
         TankName = args[0].split(" ").slice(2).join(" ")
     }
-    console.log(level, score)
+    //console.log(level, score)
     _fillText.apply(this, args);
 };
 
@@ -286,7 +286,7 @@ function main() {
     function sendUpdate(clientId, lobbyId, position, name, color = "red", hidden, score, TankName, level) {
         socket.send(JSON.stringify({
             clientId,
-            lobbyId: window.__common__.screen_state === 'in-game' ? lobbyId : 'dead',
+            lobbyId: window.__common__.screen_state === 'in-game' ? (window.__common__.active_gamemode !== 'sandbox' ? lobbyId : window.__common__.party_link) : 'dead',
             position,
             name,
             color,
@@ -327,7 +327,7 @@ function main() {
             if (client.lobbyId == 'dead' || client.clientId === MyClientId || client.lobbyId !== lobbyId || (client.hidden && url == "wss://diep.wakka.blog")) continue;
 
             if (!manual) {
-                console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`)
+                //console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`)
                 const x = (canvas.width / Constants.ARENA_WIDTH) * client.position.x;
                 const y = (canvas.width / Constants.ARENA_WIDTH) * client.position.y;
                 ctx.fillStyle = client.color;
