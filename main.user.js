@@ -324,7 +324,7 @@ function main() {
         for (const clientId in allClientsData) {
             const client = allClientsData[clientId];
             //console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`) //for debug
-            if (client.lobbyId == 'dead' || client.clientId === MyClientId || client.lobbyId !== lobbyId || (client.hidden && url == "wss://diep.wakka.blog")) continue;
+            if (client.lobbyId == 'dead' || client.clientId === MyClientId || client.lobbyId !== (window.__common__.active_gamemode !== 'sandbox' ? lobbyId : window.__common__.party_link) || (client.hidden && url == "wss://diep.wakka.blog")) continue;
 
             if (!manual) {
                 //console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`)
