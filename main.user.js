@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Share Position + AFK
 // @namespace    http://tampermonkey.net/
-// @version      2024-10-30-1
+// @version      2024-11-3-2
 // @description  Shift + I to share position, 'J' to afk.
 // @author       baka multi
 // @match        https://diep.io/*
@@ -136,6 +136,8 @@ let screen_data = {
     minimap_height: 0
 };
 
+let tankdata = [];
+
 let isXKeyPressed = false;
 let startX, startY, endX, mx, my, mw, mh;
 
@@ -211,6 +213,7 @@ crc.fillText = function (...args) {
         level = args[0].split(" ")[1];
         TankName = args[0].split(" ").slice(2).join(" ")
     }
+    console.log(level, score)
     _fillText.apply(this, args);
 };
 
@@ -263,7 +266,7 @@ function main() {
         console.log("Connected");
         setInterval(() => {
             const position = getPosition();
-            sendUpdate(MyClientId, lobbyId, position, name, getColorFromLobbyId(), !isactive);
+            sendUpdate(MyClientId, lobbyId, position, name, getColorFromLobbyId(), !isactive, score, TankName, level);
         }, 250);
     };
 
@@ -298,10 +301,6 @@ function main() {
         canvas.style.zIndex = '9999';
         canvas.style.position = 'fixed';
 
-
-
-
-
         if (!isactive) {canvas.style.display = "none"; return;}
         canvas.style.display = "block";
         //ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -316,6 +315,12 @@ function main() {
                 canvas.style.top = `${my}px`
                 canvas.width = canvas.height = mw;
         }
+        tankdata = Object.values(allClientsData).filter(entry => entry.lobbyId === lobbyId).map(item => [
+            item.name || "unnamed",
+            item.TankName || "null",
+            item.score || "null",
+            item.level || "null"
+        ]);
         for (const clientId in allClientsData) {
             const client = allClientsData[clientId];
             //console.log(`x:${(canvas.width / Constants.ARENA_WIDTH) * client.position.x} y:${(canvas.width / Constants.ARENA_WIDTH) * client.position.y} name:${client.name}`) //for debug
@@ -372,6 +377,72 @@ function main() {
         const colorCodes = ["blue", "red", "purple", "green"];
         return colorCodes[parseInt(window.__common__.party_link.slice(32, 33), 16)] || "red";
     }
+    rag();
+}
+
+//thx for rag <3
+function rag() {
+    const menu = document.createElement('div');
+    menu.id = 'custom-menu';
+    menu.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        display: none;
+        z-index: 1000;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    `;
+    menu.innerHTML = `
+        <h2>味方機体一覧</h2>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid #ddd; padding: 8px;">名前</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">機体</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">スコア</th>
+                    <th style="border: 1px solid #ddd; padding: 8px;">レベル</th>
+                </tr>
+            </thead>
+            <tbody id="tankdata-body">
+            </tbody>
+        </table>
+        <p>thx for rag <3</p>
+    `;
+    document.body.appendChild(menu);
+
+    function populateTable() {
+        const tbody = document.getElementById('tankdata-body');
+        tbody.innerHTML = '';
+        tankdata.forEach(item => {
+            const row = document.createElement('tr');
+            item.forEach(cell => {
+                const td = document.createElement('td');
+                td.style.cssText = 'border: 1px solid #ddd; padding: 8px;';
+                td.textContent = cell;
+                row.appendChild(td);
+            });
+            tbody.appendChild(row);
+        });
+    }
+
+    document.addEventListener('keydown', function(event) {
+        if (isactive) {
+            if (event.key === 'q' || event.key === 'Q' ) {
+                event.preventDefault();
+                populateTable();
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        else if (event.key === 'q' || event.key === 'Q' ){
+            menu.style.display = 'none';
+        }
+    });
+    setInterval(populateTable ,250);
 }
 
 document.addEventListener("keydown", (event) => {
